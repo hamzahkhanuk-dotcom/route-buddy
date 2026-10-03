@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Route Buddy">
+<meta name="theme-color" content="#0f172a">
+<title>Route Buddy</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--ink:#0f172a;--mute:#64748b;--line:#e2e8f0;--blue:#2563eb;--green:#16a34a;--amber:#f59e0b;--red:#dc2626;--chip:#e0e7ff}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--ink:#f1f5f9;--mute:#94a3b8;--line:#22304a;--chip:#1e2a4a}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+[hidden]{display:none!important}
+header{position:sticky;top:0;z-index:1000;background:#0f172a;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:10px}
+header h1{font-size:20px;margin:0;flex:1}
+.hbadge{background:#facc15;color:#111;font-weight:800;border-radius:10px;padding:6px 10px;font-size:15px;white-space:nowrap;border:0;cursor:pointer}
+main{max-width:720px;margin:0 auto;padding:14px 16px 120px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+h2{font-size:19px;margin:0 0 10px}
+label{display:block;font-weight:600;margin:10px 0 4px}
+input,textarea{width:100%;font-size:17px;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+textarea{min-height:90px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+button{font:inherit;cursor:pointer}
+.btn{display:block;width:100%;padding:15px;border-radius:14px;border:0;font-weight:700;font-size:18px;background:var(--blue);color:#fff;margin-top:12px}
+.btn.green{background:var(--green)}.btn.ghost{background:var(--chip);color:var(--ink)}.btn.small{padding:10px;font-size:15px;margin-top:8px}
+.btn:disabled{opacity:.5}
+.warn{background:#fef3c7;color:#78350f;border-radius:12px;padding:12px;font-size:15px}
+@media (prefers-color-scheme:dark){.warn{background:#3b2a07;color:#fde68a}}
+.stop{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--line);padding:12px 0}
+.stop:first-child{border-top:0}
+.num{flex:0 0 34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:800}
+.num.start{background:var(--green)}
+.stop .info{flex:1;min-width:0}
+.stop .name{font-weight:700}.stop .sub{color:var(--mute);font-size:14px}
+.stop textarea{min-height:44px;margin-top:6px;font-size:15px;padding:8px}
+.mini{display:flex;flex-direction:column;gap:4px}
+.mini button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;width:38px;height:32px}
+#map{height:46vh;min-height:260px;border-radius:16px;border:1px solid var(--line);margin-bottom:12px}
+.sum{display:flex;gap:10px;margin-bottom:12px}.sum div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.sum b{display:block;font-size:22px}
+.step{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.arrow{flex:0 0 56px;height:56px;border-radius:14px;background:var(--chip);display:grid;place-items:center;font-size:32px;font-weight:800;position:relative}
+.arrow small{position:absolute;bottom:2px;right:6px;font-size:14px}
+.step .txt{flex:1;min-width:0}
+.step .dist{color:var(--mute);font-size:14px;font-weight:600}
+.step .main{font-size:19px;font-weight:700;margin:2px 0}
+.lanes{display:flex;gap:4px;margin:8px 0 4px}
+.lane{width:34px;height:40px;border-radius:6px;display:grid;place-items:center;font-size:20px;background:#cbd5e1;color:#64748b}
+.lane.on{background:var(--green);color:#fff}
+.lanetxt{font-weight:800;color:var(--green)}
+.acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.acts a,.acts button{font-size:14px;padding:8px 10px;border-radius:10px;background:var(--chip);color:var(--ink);text-decoration:none;border:0;font-weight:600}
+.drop{background:var(--green);color:#fff;border-radius:16px;padding:14px;margin:14px 0 10px}
+.drop .main{font-size:19px;font-weight:800}
+.drop .note{background:rgba(255,255,255,.18);border-radius:10px;padding:8px;margin-top:8px;white-space:pre-wrap}
+.drop .acts a{background:rgba(255,255,255,.25);color:#fff}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;border:0;background:none;color:var(--mute);padding:10px 4px 12px;font-size:13px;font-weight:600}
+nav.tabs button span{display:block;font-size:22px}
+nav.tabs button.on{color:var(--blue)}
+#practice{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;flex-direction:column}
+#pmap{flex:1;min-height:0}
+#pcard{padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+.pnav{display:flex;gap:10px}.pnav .btn{margin-top:10px}
+.toast{position:fixed;left:50%;top:80px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;z-index:3000;font-weight:600;max-width:90vw;text-align:center}
+.saved{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding:10px 0}
+.saved:first-child{border-top:0}.saved div{flex:1}
+.muted{color:var(--mute);font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🚛 Route Buddy</h1>
+  <button class="hbadge" id="hbadge" onclick="go('truck')">⚠ 4.0 m</button>
+</header>
+
+<main>
+<!-- PLAN -->
+<section id="v-plan">
+  <div class="warn">Plan your route <b>before you drive</b>. Never use your phone while driving. Always follow road signs and bridge heights. This map uses free OpenStreetMap data and can have gaps.</div>
+  <div class="card" style="margin-top:14px">
+    <h2>1. Where do you start?</h2>
+    <button class="btn green" onclick="useMyLocation()">📍 Use my location now</button>
+    <label>…or type a postcode / address</label>
+    <div class="row"><input id="startIn" placeholder="e.g. CM16 4BL"><button class="btn small" style="flex:0 0 90px;margin-top:0" onclick="setStart()">Set</button></div>
+    <div id="startShow" class="muted" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h2>2. Add your drops (in order)</h2>
+    <label>Postcode or address</label>
+    <input id="dropIn" placeholder="e.g. E4 9QJ or Tesco Chingford">
+    <label>Name (optional)</label>
+    <input id="dropName" placeholder="e.g. Tesco Chingford – goods in">
+    <button class="btn" onclick="addDrop()">➕ Add drop</button>
+    <details style="margin-top:12px"><summary class="muted">Paste many postcodes at once</summary>
+      <textarea id="bulk" placeholder="One postcode or address per line"></textarea>
+      <button class="btn small ghost" onclick="addBulk()">Add all</button>
+    </details>
+  </div>
+  <div class="card">
+    <h2>Your run</h2>
+    <div id="stops"></div>
+    <button class="btn green" id="planBtn" onclick="planRoute()">🗺️ Plan truck route</button>
+    <button class="btn small ghost" onclick="saveRun()">💾 Save this run</button>
+    <button class="btn small ghost" onclick="clearRun()">🗑️ Clear run</button>
+  </div>
+</section>
+
+<!-- ROUTE -->
+<section id="v-route" hidden>
+  <div id="noRoute" class="card">No route yet. Add your drops on the <b>Plan</b> tab and press <b>Plan truck route</b>.</div>
+  <div id="routeWrap" hidden>
+    <div id="map"></div>
+    <div class="sum"><div><b id="sMiles">–</b>miles</div><div><b id="sTime">–</b>drive time*</div><div><b id="sDrops">–</b>drops</div></div>
+    <button class="btn green" onclick="startPractice(0)">▶️ Practise route step by step</button>
+    <p class="muted">*Truck estimate, no traffic. Tap 👀 on any step to see the junction in Street View.</p>
+    <div id="steps"></div>
+  </div>
+</section>
+
+<!-- TRUCK -->
+<section id="v-truck" hidden>
+  <div class="card">
+    <h2>Your truck</h2>
+    <p class="muted">Check the height sticker in your cab. The route avoids roads and bridges your truck doesn't fit, when the map knows about them.</p>
+    <label>Height (metres)</label><input id="tH" type="number" step="0.01" inputmode="decimal">
+    <div id="tHft" class="muted"></div>
+    <label>Weight (tonnes)</label><input id="tW" type="number" step="0.5" inputmode="decimal">
+    <div class="row"><div><label>Width (m)</label><input id="tWi" type="number" step="0.01" inputmode="decimal"></div>
+    <div><label>Length (m)</label><input id="tL" type="number" step="0.1" inputmode="decimal"></div></div>
+    <button class="btn" onclick="saveTruck()">💾 Save truck</button>
+  </div>
+  <div class="card">
+    <h2>Saved runs</h2>
+    <div id="savedList" class="muted">None yet.</div>
+  </div>
+</section>
+</main>
+
+<nav class="tabs">
+  <button id="t-plan" class="on" onclick="go('plan')"><span>📋</span>Plan</button>
+  <button id="t-route" onclick="go('route')"><span>🗺️</span>Route</button>
+  <button id="t-truck" onclick="go('truck')"><span>🚛</span>Truck & saved</button>
+</nav>
+
+<div id="practice" hidden>
+  <div id="pmap"></div>
+  <div id="pcard">
+    <div id="pstep"></div>
+    <div class="pnav">
+      <button class="btn ghost" onclick="pMove(-1)">◀ Back</button>
+      <button class="btn" onclick="speakCur()">🔊</button>
+      <button class="btn" onclick="pMove(1)">Next ▶</button>
+    </div>
+    <button class="btn small ghost" onclick="closePractice()">✖ Close practice</button>
+  </div>
+</div>
+
+<script>
+const LS={get(k,d){try{const v=localStorage.getItem('rb_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('rb_'+k,JSON.stringify(v))}catch(e){}}};
+let truck=LS.get('truck',{h:4.0,w:18,wi:2.55,l:10});
+let run=LS.get('run',{start:null,drops:[]});
+let route=LS.get('route',null);
+let map,pmap,routeLayer,pLayer,pMarker,items=[],pIdx=0;
+const $=id=>document.getElementById(id);
+function toast(t,ms=2500){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),ms)}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function ft(m){const t=m*3.28084,f=Math.floor(t),i=Math.round((t-f)*12);return i===12?`${f+1}'0"`:`${f}'${i}"`}
+
+function go(v){['plan','route','truck'].forEach(x=>{$('v-'+x).hidden=x!==v;$('t-'+x).classList.toggle('on',x===v)});
+  if(v==='route'&&route){setTimeout(()=>{drawMap()},50)} if(v==='truck')renderSaved(); window.scrollTo(0,0)}
+
+/* ---------- truck ---------- */
+function showTruck(){$('hbadge').textContent=`⚠ ${(+truck.h).toFixed(2)} m · ${ft(truck.h)}`;$('tH').value=truck.h;$('tW').value=truck.w;$('tWi').value=truck.wi;$('tL').value=truck.l;$('tHft').textContent=`= ${ft(truck.h)} (bridge signs show feet and inches)`}
+function saveTruck(){const h=parseFloat($('tH').value),w=parseFloat($('tW').value),wi=parseFloat($('tWi').value),l=parseFloat($('tL').value);
+  if(!(h>2&&h<5.5)){toast('Height looks wrong – check the cab sticker');return}
+  truck={h,w:w||18,wi:wi||2.55,l:l||10};LS.set('truck',truck);showTruck();toast('Truck saved ✅ – plan your route again')}
+$('tH').addEventListener('input',()=>{const h=parseFloat($('tH').value);if(h>0)$('tHft').textContent=`= ${ft(h)}`});
+
+/* ---------- geocoding ---------- */
+const PC=/^[A-Z]{1,2}[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}$/i;
+async function geocode(q){q=q.trim();if(!q)throw new Error('empty');
+  if(PC.test(q)){const r=await fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(q.replace(/\s+/g,'')));const j=await r.json();
+    if(j.status===200)return{lat:j.result.latitude,lon:j.result.longitude,label:j.result.postcode,area:[j.result.admin_ward,j.result.admin_district].filter(Boolean).join(', ')};throw new Error('Postcode not found: '+q)}
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(q));const j=await r.json();
+  if(j&&j[0])return{lat:+j[0].lat,lon:+j[0].lon,label:q,area:j[0].display_name.split(',').slice(1,4).join(',').trim()};throw new Error('Address not found: '+q)}
+
+function useMyLocation(){if(!navigator.geolocation){toast('Location not available');return}
+  toast('Finding you…');navigator.geolocation.getCurrentPosition(p=>{run.start={lat:p.coords.latitude,lon:p.coords.longitude,label:'My location',area:''};saveRunState();toast('Start set ✅')},
+  ()=>toast('Location blocked – type your postcode instead'),{enableHighAccuracy:true,timeout:15000})}
+async function setStart(){try{const g=await geocode($('startIn').value);run.start=g;saveRunState();$('startIn').value='';toast('Start set ✅')}catch(e){toast(e.message)}}
+async function addDrop(){const q=$('dropIn').value;if(!q.trim()){toast('Type a postcode or address');return}
+  try{const g=await geocode(q);g.name=$('dropName').value.trim();g.note='';run.drops.push(g);saveRunState();$('dropIn').value='';$('dropName').value='';toast('Drop added ✅')}catch(e){toast(e.message)}}
+async function addBulk(){const lines=$('bulk').value.split('\n').map(s=>s.trim()).filter(Boolean);let ok=0,bad=[];
+  for(const l of lines){try{const g=await geocode(l);g.name='';g.note='';run.drops.push(g);ok++}catch(e){bad.push(l)}await new Promise(r=>setTimeout(r,1100))}
+  saveRunState();$('bulk').value=bad.join('\n');toast(`Added ${ok}`+(bad.length?` · ${bad.length} not found (left in box)`:''),4000)}
+function saveRunState(){LS.set('run',run);renderStops()}
+function renderStops(){
+  $('startShow').innerHTML=run.start?`Start: <b>${esc(run.start.label)}</b> ${esc(run.start.area||'')}`:'No start set yet.';
+  let h=run.start?`<div class="stop"><div class="num start">S</div><div class="info"><div class="name">Start – ${esc(run.start.label)}</div><div class="sub">${esc(run.start.area||'')}</div></div></div>`:'';
+  run.drops.forEach((d,i)=>{h+=`<div class="stop"><div class="num">${i+1}</div><div class="info"><div class="name">${esc(d.name||d.label)}</div><div class="sub">${esc(d.name?d.label+' · ':'')}${esc(d.area||'')}</div>
+   <textarea placeholder="Notes: gate code, which bay, reverse in…" onchange="run.drops[${i}].note=this.value;LS.set('run',run)">${esc(d.note||'')}</textarea></div>
+   <div class="mini"><button onclick="mv(${i},-1)">▲</button><button onclick="mv(${i},1)">▼</button><button onclick="rm(${i})">✕</button></div></div>`});
+  $('stops').innerHTML=h||'<p class="muted">Set a start and add your first drop.</p>';
+  $('planBtn').disabled=!(run.start&&run.drops.length)}
+function mv(i,d){const j=i+d;if(j<0||j>=run.drops.length)return;[run.drops[i],run.drops[j]]=[run.drops[j],run.drops[i]];saveRunState()}
+function rm(i){if(confirm('Remove this drop?')){run.drops.splice(i,1);saveRunState()}}
+function clearRun(){if(confirm('Clear the whole run?')){run={start:null,drops:[]};route=null;LS.set('route',null);saveRunState();toast('Cleared')}}
+
+/* ---------- routing ---------- */
+async function planRoute(){if(!(run.start&&run.drops.length))return;$('planBtn').disabled=true;$('planBtn').textContent='⏳ Planning truck route…';
+  const locs=[run.start,...run.drops].map(p=>({lat:p.lat,lon:p.lon}));
+  const body={locations:locs,costing:'truck',costing_options:{truck:{height:+truck.h,weight:+truck.w,width:+truck.wi,length:+truck.l,hazmat:false}},format:'osrm',banner_instructions:true,units:'miles',shape_format:'geojson',language:'en-GB'};
+  try{const r=await fetch('https://valhalla1.openstreetmap.de/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();if(!j.routes||!j.routes.length)throw new Error(j.error||'No truck route found');
+    route={r:j.routes[0],stops:JSON.parse(JSON.stringify(run)),truck:{...truck},at:Date.now()};LS.set('route',route);toast('Route ready ✅');go('route')}
+  catch(e){toast('Could not plan: '+e.message,5000)}
+  $('planBtn').disabled=false;$('planBtn').textContent='🗺️ Plan truck route'}
+
+/* ---------- turning steps into plain English ---------- */
+const ARW={left:'⬅',right:'➡','slight left':'↖','slight right':'↗','sharp left':'↙','sharp right':'↘',straight:'⬆',uturn:'↩',none:'⬆'};
+function nth(n){return n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th')}
+function road(s){const ref=s.ref||'',name=s.name||'';if(ref&&name&&!name.includes(ref))return `${ref} (${name})`;return ref||name||'the road'}
+function side(m){return (m||'').includes('left')?'LEFT':(m||'').includes('right')?'RIGHT':''}
+function dist(m){const mi=m/1609.34;return mi<0.2?`${Math.round(m*1.09361/10)*10} yards`:`${mi.toFixed(mi<10?1:0)} miles`}
+function plain(s){const m=s.maneuver,t=m.type,mod=m.modifier||'',rd=road(s),to=s.destinations?` towards ${s.destinations.split(':').pop().trim()}`:'';
+  switch(t){
+    case 'depart':return{icon:'🚦',text:`Start: drive onto ${rd}`};
+    case 'arrive':return null;
+    case 'turn':case 'end of road':return{icon:ARW[mod]||'⬆',text:mod==='uturn'?`Turn around (U-turn) onto ${rd}`:`Turn ${side(mod)||mod.toUpperCase()} onto ${rd}`};
+    case 'rotary':case 'roundabout':return{icon:'⟳',exit:m.exit,text:`At the roundabout${s.rotary_name?' ('+s.rotary_name+')':''}, take the ${nth(m.exit||1)} exit onto ${rd}${to}`};
+    case 'exit rotary':case 'exit roundabout':return null;
+    case 'off ramp':return{icon:ARW[mod]||'↗',text:`Take the slip road (exit) on the ${side(mod)||'LEFT'}${to||' for '+rd}`};
+    case 'on ramp':return{icon:ARW[mod]||'↗',text:`Join ${rd} using the slip road${to}`};
+    case 'fork':return{icon:ARW[mod]||'↖',text:`Where the road splits, keep ${side(mod)||'straight'} for ${rd}${to}`};
+    case 'merge':return{icon:ARW[mod]||'⬆',text:`Merge onto ${rd}`};
+    case 'continue':case 'new name':return{icon:ARW[mod]||'⬆',text:`Continue onto ${rd}`};
+    default:return{icon:ARW[mod]||'⬆',text:m.instruction||`Continue on ${rd}`}}}
+function lanesFrom(prev){if(!prev)return null;let last=null;(prev.intersections||[]).forEach(i=>{if(i.lanes&&i.lanes.length)last=i.lanes});if(!last)return null;
+  const n=last.length,v=last.map(l=>!!l.valid),k=v.filter(Boolean).length;if(!k||k===n)return null;
+  const first=v.indexOf(true),lastI=v.lastIndexOf(true);let txt;
+  if(first===0)txt=k===1?'Get in the LEFT lane':`Use the LEFT ${k} lanes`;else if(lastI===n-1)txt=k===1?'Get in the RIGHT lane':`Use the RIGHT ${k} lanes`;else txt=k===1?`Use lane ${first+1} of ${n} (middle)`:'Use the MIDDLE lanes';
+  return{lanes:last.map(l=>({a:ARW[(l.valid&&l.valid_indication)||(l.indications||['straight'])[0]]||'⬆',on:!!l.valid})),txt}}
+function buildItems(){items=[];const legs=route.r.legs,st=route.stops;
+  legs.forEach((leg,li)=>{const steps=leg.steps;let carry=0;
+    steps.forEach((s,si)=>{const p=plain(s);if(!p){carry+=0;if(s.maneuver.type!=='arrive'){items.length&&(items[items.length-1].after+=s.distance)}return}
+      const prevDist=si>0?steps[si-1].distance:0;
+      items.push({kind:'step',...p,lanes:lanesFrom(si>0?steps[si-1]:null),inDist:prevDist,after:s.distance,loc:s.maneuver.location,bear:s.maneuver.bearing_before||s.maneuver.bearing_after||0,leg:li})});
+    const d=st.drops[li];const end=steps[steps.length-1].maneuver.location;
+    items.push({kind:'drop',n:li+1,d,loc:end,inDist:steps.length>1?steps[steps.length-2].distance:0})})}
+function sv(loc,bear){return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc[1]},${loc[0]}&heading=${Math.round(bear)}`}
+function navLinks(d){const ll=`${d.lat},${d.lon}`;return `<a href="https://maps.apple.com/?daddr=${ll}" target="_blank">Apple Maps</a><a href="https://www.google.com/maps/dir/?api=1&destination=${ll}" target="_blank">Google Maps</a><a href="com.sygic.aura://coordinate|${d.lon}|${d.lat}|drive">Sygic</a><a href="https://osmand.net/map?pin=${ll}#16/${d.lat}/${d.lon}" target="_blank">OsmAnd</a>`}
+function stepHTML(it,i,big){
+  if(it.kind==='drop'){const d=it.d;return `<div class="drop"><div class="dist">${it.inDist?'In '+dist(it.inDist):''}</div><div class="main">📦 Drop ${it.n}: ${esc(d.name||d.label)}</div><div>${esc(d.label)} ${esc(d.area||'')}</div>${d.note?`<div class="note">${esc(d.note)}</div>`:''}
+    <div class="acts"><a href="${sv(it.loc,0)}" target="_blank">👀 Street View</a>${big?'':navLinks(d)}</div></div>`}
+  const ln=it.lanes?`<div class="lanes">${it.lanes.lanes.map(l=>`<div class="lane ${l.on?'on':''}">${l.a}</div>`).join('')}</div><div class="lanetxt">${it.lanes.txt}</div>`:'';
+  return `<div class="step"><div class="arrow">${it.icon}${it.exit?`<small>${it.exit}</small>`:''}</div><div class="txt">
+   <div class="dist">${i===0?'':'In '+dist(it.inDist)}</div><div class="main">${esc(it.text)}</div>${ln}
+   <div class="acts">${big?'':`<button onclick="startPractice(${i})">🔍 Practise from here</button>`}<a href="${sv(it.loc,it.bear)}" target="_blank">👀 Street View</a></div></div></div>`}
+function renderRoute(){if(!route){$('noRoute').hidden=false;$('routeWrap').hidden=true;return}
+  $('noRoute').hidden=true;$('routeWrap').hidden=false;buildItems();
+  $('sMiles').textContent=(route.r.distance/1609.34).toFixed(1);const m=Math.round(route.r.duration/60);$('sTime').textContent=m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`;$('sDrops').textContent=route.stops.drops.length;
+  let warn=(route.truck.h!==truck.h||route.truck.w!==truck.w)?'<div class="warn" style="margin-bottom:10px">Truck size changed since this route was planned – go to Plan and press Plan truck route again.</div>':'';
+  $('steps').innerHTML=warn+items.map((it,i)=>stepHTML(it,i,false)).join('')}
+function pins(m){const st=route.stops;const mk=(p,t,c)=>L.marker([p.lat,p.lon],{icon:L.divIcon({className:'',html:`<div style="background:${c};color:#fff;border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px #0006">${t}</div>`,iconSize:[30,30],iconAnchor:[15,15]})}).addTo(m);
+  mk(st.start,'S','#16a34a');st.drops.forEach((d,i)=>mk(d,i+1,'#2563eb'))}
+function tiles(m){L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(m)}
+function drawMap(){renderRoute();if(!route)return;
+  if(!map){map=L.map('map',{zoomControl:true});tiles(map)}
+  if(routeLayer)map.removeLayer(routeLayer);routeLayer=L.layerGroup().addTo(map);
+  const g=L.geoJSON(route.r.geometry,{style:{color:'#2563eb',weight:6,opacity:.85}}).addTo(routeLayer);pins(routeLayer);
+  map.invalidateSize();map.fitBounds(g.getBounds(),{padding:[20,20]})}
+
+/* ---------- practice ---------- */
+function startPractice(i){if(!route)return;buildItems();$('practice').hidden=false;
+  if(!pmap){pmap=L.map('pmap',{zoomControl:false});tiles(pmap)}
+  if(pLayer)pmap.removeLayer(pLayer);pLayer=L.layerGroup().addTo(pmap);L.geoJSON(route.r.geometry,{style:{color:'#2563eb',weight:8,opacity:.85}}).addTo(pLayer);pins(pLayer);
+  setTimeout(()=>{pmap.invalidateSize();pShow(i)},60)}
+function pShow(i){pIdx=Math.max(0,Math.min(items.length-1,i));const it=items[pIdx];
+  $('pstep').innerHTML=`<div class="muted">Step ${pIdx+1} of ${items.length}</div>`+stepHTML(it,pIdx,true);
+  const ll=[it.loc[1],it.loc[0]];pmap.setView(ll,17);if(pMarker)pmap.removeLayer(pMarker);pMarker=L.circleMarker(ll,{radius:12,color:'#dc2626',weight:4,fillOpacity:.3}).addTo(pmap)}
+function pMove(d){pShow(pIdx+d)}
+function speakCur(){const it=items[pIdx];if(!('speechSynthesis' in window))return;speechSynthesis.cancel();
+  let t=it.kind==='drop'?`Drop ${it.n}. ${it.d.name||it.d.label}. ${it.d.note||''}`:`${pIdx?'In '+dist(it.inDist)+'. ':''}${it.text}. ${it.lanes?it.lanes.txt:''}`;
+  const u=new SpeechSynthesisUtterance(t.replace(/\(|\)/g,', '));u.lang='en-GB';u.rate=.95;speechSynthesis.speak(u)}
+function closePractice(){$('practice').hidden=true;speechSynthesis&&speechSynthesis.cancel()}
+
+/* ---------- saved runs ---------- */
+function saveRun(){if(!run.drops.length){toast('Add drops first');return}const n=prompt('Name this run (e.g. Monday – Chingford run)');if(!n)return;
+  const s=LS.get('saved',[]);s.unshift({n,run:JSON.parse(JSON.stringify(run)),at:Date.now()});LS.set('saved',s.slice(0,30));toast('Saved ✅')}
+function renderSaved(){const s=LS.get('saved',[]);$('savedList').innerHTML=s.length?s.map((x,i)=>`<div class="saved"><div><b>${esc(x.n)}</b><div class="muted">${x.run.drops.length} drops · ${new Date(x.at).toLocaleDateString('en-GB')}</div></div>
+  <button class="btn small" style="width:auto;margin:0" onclick="loadRun(${i})">Load</button><button class="btn small ghost" style="width:auto;margin:0" onclick="delRun(${i})">✕</button></div>`).join(''):'None yet.'}
+function loadRun(i){const s=LS.get('saved',[]);run=JSON.parse(JSON.stringify(s[i].run));saveRunState();go('plan');toast('Run loaded – press Plan truck route')}
+function delRun(i){if(!confirm('Delete this saved run?'))return;const s=LS.get('saved',[]);s.splice(i,1);LS.set('saved',s);renderSaved()}
+
+showTruck();renderStops();if(route)renderRoute();
+</script>
+</body>
+</html>
