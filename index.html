@@ -249,6 +249,7 @@ function lanesFrom(prev){if(!prev)return null;let last=null;(prev.intersections|
 function buildItems(){items=[];const legs=route.r.legs,st=route.stops;
   legs.forEach((leg,li)=>{const steps=leg.steps;let carry=0;
     steps.forEach((s,si)=>{const p=plain(s);if(!p){carry+=0;if(s.maneuver.type!=='arrive'){items.length&&(items[items.length-1].after+=s.distance)}return}
+      if(s.maneuver.type==='depart'&&li>0)p.text=`Leave Drop ${li}: drive onto ${road(s)}`;
       const prevDist=si>0?steps[si-1].distance:0;
       items.push({kind:'step',...p,lanes:lanesFrom(si>0?steps[si-1]:null),inDist:prevDist,after:s.distance,loc:s.maneuver.location,bear:s.maneuver.bearing_before||s.maneuver.bearing_after||0,leg:li})});
     const d=st.drops[li];const end=steps[steps.length-1].maneuver.location;
